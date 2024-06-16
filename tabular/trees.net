@@ -1,0 +1,22 @@
+class Trees(nn.Module):
+    def __init__(self, input_dim, num_trees, depth, num_classes):
+        super(Trees, self).__init__()
+        
+        self.tree = nn.ModuleList([nn.Sequential(
+        nn.Linear(input_dim, 2**depth),
+        nn.ReLU(inplace=True),
+        nn.Linear(2**depth, num_classes))
+                                 for _ in range(num_trees)])
+        
+        self.apply(self._init_weights)
+
+    def _init_weights(self, module):
+        if isinstance(module, nn.Linear):
+            nn.init.normal_(module.weight, mean=0.0, std=0.02)
+            if module.bias is not None:
+                nn.init.zeros_(module.bias)
+        elif isinstance(module, nn.Embedding):
+            nn.init.normal_(module.weight, mean=0.0, std=0.02)
+    def forward(self, x):
+        x = [tree(x) for tree in self.tree]
+        return torch.mean(torch.stack(x), dim=0)
