@@ -11,7 +11,7 @@ def model(params, X):
     return jnp.dot(X, W) + b
 
 # Training loop with early stopping and loss tracking
-def train_one_fold(train_X, train_y, val_X, val_y, learning_rate=0.01, epochs=100, patience=10):
+def train_one_fold(train_X, train_y, val_X, val_y, learning_rate=0.01, epochs=100, patience=10, noise_scale=0.0):
     # Initialize weights and biases randomly
     rng = jax.random.PRNGKey(42)
     W = jax.random.normal(rng, shape=(train_X.shape[1],))  # Weight vector
@@ -28,6 +28,8 @@ def train_one_fold(train_X, train_y, val_X, val_y, learning_rate=0.01, epochs=10
     # Compute gradients
     grad_fn = jax.grad(loss_fn)
 
+    noise = jax.random.normal(rng, shape=params[0].shape) * noise_scale
+
     # Track losses
     train_losses = []
     val_losses = []
@@ -41,7 +43,7 @@ def train_one_fold(train_X, train_y, val_X, val_y, learning_rate=0.01, epochs=10
     for epoch in progress_bar:
         grads = grad_fn(params, train_X, train_y)  # Gradients for W and b
         params = (
-            params[0] - learning_rate * grads[0],  # Update W
+            params[0] - learning_rate * grads[0] + noise,  # Update W
             params[1] - learning_rate * grads[1],  # Update b
         )
 
